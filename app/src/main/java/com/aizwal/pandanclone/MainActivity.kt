@@ -13,45 +13,47 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import android.content.Context
+import androidx.compose.runtime.*
 import com.aizwal.pandanclone.ui.MainScreen
+import com.aizwal.pandanclone.ui.OnboardingScreen
 import com.aizwal.pandanclone.service.ScreenTimerService
+import com.aizwal.pandanclone.ui.theme.PandanTheme
 
 class MainActivity : ComponentActivity() {
-
-    private val requestPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-            // if granted, we can start the service
-        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-        
         setContent {
-            MaterialTheme(colorScheme = androidx.compose.material3.darkColorScheme()) {
+            PandanTheme {
+                val prefs = remember { getSharedPreferences("PandanPrefs", Context.MODE_PRIVATE) }
+                var showOnboarding by remember { 
+                    mutableStateOf(!prefs.getBoolean("onboarding_completed", false)) 
+                }
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen(
-                        onStartService = {
-                            val intent = Intent(this, ScreenTimerService::class.java)
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                startForegroundService(intent)
-                            } else {
-                                startService(intent)
+                    if (showOnboarding) {
+                        OnboardingScreen(onFinished = { showOnboarding = false })
+                    } else {
+                        MainScreen(
+                            onStartService = {
+                                val intent = Intent(this, ScreenTimerService::class.java)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    startForegroundService(intent)
+                                } else {
+                                    startService(intent)
+                                }
+                            },
+                            onStopService = {
+                                val intent = Intent(this, ScreenTimerService::class.java)
+                                stopService(intent)
                             }
-                        },
-                        onStopService = {
-                            val intent = Intent(this, ScreenTimerService::class.java)
-                            stopService(intent)
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }

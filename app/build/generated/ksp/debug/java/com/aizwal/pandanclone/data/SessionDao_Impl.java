@@ -154,6 +154,49 @@ public final class SessionDao_Impl implements SessionDao {
     });
   }
 
+  @Override
+  public Flow<List<SessionEntity>> getSessionsFromDate(final long startDate) {
+    final String _sql = "SELECT * FROM sessions WHERE startTime >= ? ORDER BY startTime ASC";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, startDate);
+    return CoroutinesRoom.createFlow(__db, false, new String[] {"sessions"}, new Callable<List<SessionEntity>>() {
+      @Override
+      @NonNull
+      public List<SessionEntity> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfStartTime = CursorUtil.getColumnIndexOrThrow(_cursor, "startTime");
+          final int _cursorIndexOfEndTime = CursorUtil.getColumnIndexOrThrow(_cursor, "endTime");
+          final int _cursorIndexOfDurationMs = CursorUtil.getColumnIndexOrThrow(_cursor, "durationMs");
+          final List<SessionEntity> _result = new ArrayList<SessionEntity>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final SessionEntity _item;
+            final long _tmpId;
+            _tmpId = _cursor.getLong(_cursorIndexOfId);
+            final long _tmpStartTime;
+            _tmpStartTime = _cursor.getLong(_cursorIndexOfStartTime);
+            final long _tmpEndTime;
+            _tmpEndTime = _cursor.getLong(_cursorIndexOfEndTime);
+            final long _tmpDurationMs;
+            _tmpDurationMs = _cursor.getLong(_cursorIndexOfDurationMs);
+            _item = new SessionEntity(_tmpId,_tmpStartTime,_tmpEndTime,_tmpDurationMs);
+            _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+        }
+      }
+
+      @Override
+      protected void finalize() {
+        _statement.release();
+      }
+    });
+  }
+
   @NonNull
   public static List<Class<?>> getRequiredConverters() {
     return Collections.emptyList();

@@ -15,4 +15,7 @@ interface SessionDao {
     
     @Query("SELECT * FROM sessions WHERE startTime >= :startOfDay ORDER BY startTime DESC")
     fun getSessionsForDay(startOfDay: Long): Flow<List<SessionEntity>>
+
+    @Query("SELECT * FROM sessions WHERE startTime >= :startDate ORDER BY startTime ASC")
+    fun getSessionsFromDate(startDate: Long): Flow<List<SessionEntity>>
 }
